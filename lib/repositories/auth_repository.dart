@@ -5,11 +5,11 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class AuthRepository {
+  AuthRepository(this._auth, this._googleSignIn);
+
   final FirebaseAuth _auth;
 
-  AuthRepository(this._auth);
-
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final GoogleSignIn _googleSignIn;
 
   User? get getUser => _auth.currentUser;
 
@@ -22,12 +22,12 @@ class AuthRepository {
   void updateUserName(String? name) =>
       _auth.currentUser?.updateDisplayName(name);
 
-  Future<String> signInWithEmailAndPassword(
+  Future<User?> signInWithEmailAndPassword(
       String email, String password) async {
     final credentials = (await _auth.signInWithEmailAndPassword(
         email: email, password: password));
 
-    return credentials.user?.uid ?? "";
+    return credentials.user;
   }
 
   Future<void> signOut() async => await _auth.signOut();
@@ -98,8 +98,9 @@ class AuthRepository {
     return _auth.sendPasswordResetEmail(email: email);
   }
 
-  Future singInAnonymously() {
-    return _auth.signInAnonymously();
+  Future<User?> singInAnonymously() async {
+    final credential = await _auth.signInAnonymously();
+    return credential.user;
   }
 
   Future convertUserWithEmail(String email, String password) async {

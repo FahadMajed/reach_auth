@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:get/get.dart';
 import 'package:reach_auth/reach_auth.dart';
 import 'package:reach_core/core/core.dart';

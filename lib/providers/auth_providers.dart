@@ -1,15 +1,25 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:reach_auth/reach_auth.dart';
 
+final userStreamPvdr =
+    StreamProvider((ref) => ref.read(authRepoPvdr).userStream);
+
 final userPvdr = StateNotifierProvider<UserNotifier, AsyncValue<User?>>(
-  (ref) => UserNotifier(ref.read)
-    ..appStarted()
-    ..addToken(collection: "researchers"),
+  (ref) {
+    final repository = ref.read(authRepoPvdr);
+    final userStream = ref.watch(userStreamPvdr);
+    return userStream.when(
+      data: (user) => UserNotifier(user, repository),
+      error: (e, t) => throw e,
+      loading: () => UserNotifier(null, repository),
+    );
+  },
 );
-final firebaseAuthProvider = Provider((ref) => FirebaseAuth.instance);
 
-final authRepoPvdr = Provider<AuthRepository>(
-    (ref) => AuthRepository(ref.watch(firebaseAuthProvider)));
+final authRepoPvdr = Provider<AuthRepository>((ref) =>
+    AuthRepository(ref.read(authServicePvdr), ref.read(googleSignInPvdr)));
 
-final isAnonPvdr = StateProvider((ref) => false);
-final emailPvdr = StateProvider<String>((ref) => "");
+final authServicePvdr = Provider((ref) => FirebaseAuth.instance);
+
+final googleSignInPvdr = Provider((ref) => GoogleSignIn());

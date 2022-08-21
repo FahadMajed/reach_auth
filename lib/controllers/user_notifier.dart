@@ -5,27 +5,12 @@ import 'package:reach_auth/reach_auth.dart';
 
 //firebase user
 class UserNotifier extends StateNotifier<AsyncValue<User?>> {
-  final Reader _read;
-  late AuthRepository repository;
-  late StreamSubscription<User?>? _authStateChangesSubscription;
+  final AuthRepository repository;
 
-  UserNotifier(this._read) : super(const AsyncLoading()) {
-    repository = _read(authRepoPvdr);
-
-    _authStateChangesSubscription = repository.userStream.listen((user) {
-      state = AsyncData(user);
-      _read(isAnonPvdr.notifier).state = user?.isAnonymous ?? false;
-      _read(emailPvdr.notifier).state = user?.email ?? "";
-    });
+  UserNotifier(User? user, this.repository) : super(const AsyncLoading()) {
+    state = user == null ? const AsyncLoading() : AsyncData(user);
   }
 
-  @override
-  void dispose() {
-    _authStateChangesSubscription?.cancel();
-    super.dispose();
-  }
-
-  void appStarted() => repository.getCurrentUser();
 //TODO FIX
   Future<void> addToken({required String collection}) async {
     // final String? deviceToken = await fcm.getToken();
@@ -40,21 +25,29 @@ class UserNotifier extends StateNotifier<AsyncValue<User?>> {
     await repository.signOut();
   }
 
-  Future signIn(AuthMethod method, {String? email, String? password}) async {
+  Future<void> signIn(
+    AuthMethod method, {
+    String? email,
+    String? password,
+  }) async {
     try {
       state = const AsyncLoading();
       switch (method) {
         case AuthMethod.email:
-          state = AsyncData(await signWithEmail(email!, password!));
+          state = AsyncData(await _signWithEmail(email!, password!));
           break;
 
         case AuthMethod.google:
-          state = AsyncData(await signWithGoogle());
+          state = AsyncData(await _signWithGoogle());
           break;
 
         case AuthMethod.apple:
-          state = AsyncData(await signWithApple());
+          state = AsyncData(await _signWithApple());
           break;
+        case AuthMethod.anon:
+          state = AsyncData(await repository.singInAnonymously());
+          break;
+
         default:
       }
     } catch (e) {
@@ -62,12 +55,12 @@ class UserNotifier extends StateNotifier<AsyncValue<User?>> {
     }
   }
 
-  Future signWithEmail(String email, String password) async =>
+  Future<User?> _signWithEmail(String email, String password) async =>
       await repository.signInWithEmailAndPassword(email, password);
 
-  Future signWithGoogle() async => await repository.signInWithGoogle();
+  Future<User?> _signWithGoogle() async => await repository.signInWithGoogle();
 
-  Future signWithApple() async => await repository.signInWithApple();
+  Future<User?> _signWithApple() async => await repository.signInWithApple();
 
   Future sendPasswordResetEmail(String email) async =>
       await repository.sendPasswordResetEmail(email);
@@ -78,16 +71,19 @@ class UserNotifier extends StateNotifier<AsyncValue<User?>> {
     try {
       switch (method) {
         case AuthMethod.email:
-          state =
-              AsyncData(await createWithEmail(email!, password!, displayName!));
+          state = AsyncData(
+              await _createWithEmail(email!, password!, displayName!));
           break;
 
         case AuthMethod.google:
-          state = AsyncData(await createWithGoogle());
+          state = AsyncData(await _createWithGoogle());
           break;
 
         case AuthMethod.apple:
-          state = AsyncData(await createWithApple());
+          state = AsyncData(await _createWithApple());
+          break;
+        case AuthMethod.anon:
+          state = AsyncData(await repository.singInAnonymously());
           break;
       }
     } catch (e) {
@@ -95,17 +91,17 @@ class UserNotifier extends StateNotifier<AsyncValue<User?>> {
     }
   }
 
-  Future<User?> createWithEmail(
+  Future<User?> _createWithEmail(
       String email, String password, String displayName) async {
     return await repository
         .createUserWithEmailAndPassword(email, password, displayName)
         .then((user) => user);
   }
 
-  Future<User?> createWithGoogle() async =>
+  Future<User?> _createWithGoogle() async =>
       await repository.signInWithGoogle().then((user) => user);
 
-  Future<User?> createWithApple() async =>
+  Future<User?> _createWithApple() async =>
       await repository.signInWithApple().then((user) => user);
 
   Future<void> convert(AuthMethod method) async {
