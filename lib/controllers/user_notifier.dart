@@ -1,24 +1,23 @@
 import 'dart:async';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:reach_auth/reach_auth.dart';
+import 'package:reach_core/core/core.dart';
+import 'package:reach_core/core/data/repositories/notifications_repository.dart';
 
 //firebase user
 class UserNotifier extends StateNotifier<AsyncValue<User?>> {
   final AuthRepository repository;
+  late final NotificationsRepository? _notificationsRepository;
 
-  UserNotifier(User? user, this.repository) : super(const AsyncLoading()) {
+  UserNotifier(User? user, this.repository,
+      {NotificationsRepository? pushNotificationsSource})
+      : super(const AsyncLoading()) {
     state = user == null ? const AsyncLoading() : AsyncData(user);
+    _notificationsRepository = pushNotificationsSource;
   }
 
-//TODO FIX
-  Future<void> addToken({required String collection}) async {
-    // final String? deviceToken = await fcm.getToken();
-    // _read(databaseProvider)
-    //     .collection(collection)
-    //     .doc(repository.getCurrentUID())
-    //     .update({"token": deviceToken});
-  }
+  Future<void> setDeviceToken() async =>
+      _notificationsRepository!.setDeviceToken();
 
   Future<void> signOut() async {
     state = const AsyncData(null);
