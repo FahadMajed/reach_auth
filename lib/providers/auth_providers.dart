@@ -4,7 +4,7 @@ import 'package:reach_core/core/core.dart';
 import 'package:reach_core/core/data/repositories/notifications_repository.dart';
 
 final userStreamPvdr =
-    StreamProvider((ref) => ref.read(authRepoPvdr).userStream);
+    StreamProvider<User?>((ref) => ref.read(authRepoPvdr).userStream);
 
 final userPvdr = StateNotifierProvider<UserNotifier, AsyncValue<User?>>(
   (ref) {

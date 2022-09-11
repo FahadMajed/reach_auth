@@ -13,7 +13,7 @@ class AuthRepository {
 
   User? get getUser => _auth.currentUser;
 
-  Stream<User?> get userStream => _auth.authStateChanges();
+  Stream<User?> get userStream => _auth.userChanges();
 
   String? getCurrentUID() => _auth.currentUser?.uid;
 

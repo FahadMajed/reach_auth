@@ -12,7 +12,7 @@ class UserNotifier extends StateNotifier<AsyncValue<User?>> {
   UserNotifier(User? user, this.repository,
       {NotificationsRepository? pushNotificationsSource})
       : super(const AsyncLoading()) {
-    state = user == null ? const AsyncLoading() : AsyncData(user);
+    state = AsyncData(user);
     _notificationsRepository = pushNotificationsSource;
   }
 
@@ -30,7 +30,7 @@ class UserNotifier extends StateNotifier<AsyncValue<User?>> {
     String? password,
   }) async {
     try {
-      state = const AsyncLoading();
+      userLoading();
       switch (method) {
         case AuthMethod.email:
           state = AsyncData(await _signWithEmail(email!, password!));
@@ -50,7 +50,9 @@ class UserNotifier extends StateNotifier<AsyncValue<User?>> {
         default:
       }
     } catch (e) {
-      state = AsyncError(e);
+      throw e;
+    } finally {
+      userLoaded();
     }
   }
 
@@ -66,7 +68,7 @@ class UserNotifier extends StateNotifier<AsyncValue<User?>> {
 
   Future<void> createAccount(AuthMethod method,
       {String? email, String? password, String? displayName}) async {
-    state = const AsyncLoading();
+    userLoading();
     try {
       switch (method) {
         case AuthMethod.email:
@@ -86,15 +88,19 @@ class UserNotifier extends StateNotifier<AsyncValue<User?>> {
           break;
       }
     } catch (e) {
-      state = AsyncError(e);
+      throw e;
+    } finally {
+      userLoading();
     }
   }
 
   Future<User?> _createWithEmail(
       String email, String password, String displayName) async {
+    userLoading();
     return await repository
         .createUserWithEmailAndPassword(email, password, displayName)
         .then((user) => user);
+    userLoaded();
   }
 
   Future<User?> _createWithGoogle() async =>
@@ -105,7 +111,7 @@ class UserNotifier extends StateNotifier<AsyncValue<User?>> {
 
   Future<void> convert(AuthMethod method) async {
     try {
-      state = const AsyncLoading();
+      userLoading();
       switch (method) {
         case AuthMethod.google:
           state = AsyncData(await repository.convertWithGoogle());
@@ -117,9 +123,15 @@ class UserNotifier extends StateNotifier<AsyncValue<User?>> {
         default:
       }
     } catch (e) {
-      state = AsyncError(e);
+      throw e;
+    } finally {
+      userLoaded();
     }
   }
 }
 
 //providers
+final RxBool isUserLoading = false.obs;
+
+void userLoading() => isUserLoading.value = true;
+Future<void> userLoaded() async => isUserLoading.value = false;
